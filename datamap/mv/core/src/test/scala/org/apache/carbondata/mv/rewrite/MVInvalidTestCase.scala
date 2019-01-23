@@ -20,20 +20,28 @@ import org.apache.spark.sql.test.util.QueryTest
 import org.scalatest.BeforeAndAfterAll
 
 class MVInvalidTestCase  extends QueryTest with BeforeAndAfterAll {
-  test("test mv different filter") {
-    val querySQL = "select age,name from main_table where name = 'lily' order by name limit 10"
 
+  override def beforeAll(): Unit = {
+    drop
+    sql("create table main_table (name string,age int,height int) stored by 'carbondata'")
+  }
+
+  def drop {
     sql("drop datamap if exists main_table_mv")
     sql("drop table if exists main_table")
-    sql("create table main_table (name string,age int,height int) stored by 'carbondata'")
+  }
+
+  test("test mv different filter") {
+    val querySQL = "select age,name from main_table where name = 'lily' order by name limit 10"
     sql("insert into main_table select 'tom',20,170")
     sql("insert into main_table select 'lily',30,160")
     sql("create datamap main_table_mv on table main_table using 'mv' as select age,name,height from main_table where name = 'tom'")
     sql("rebuild datamap main_table_mv")
 
     assert(!MVUtils.verifyMVDataMap(sql(querySQL).queryExecution.analyzed, "main_table_mv"))
+  }
 
-    sql("drop datamap if exists main_table_mv")
-    sql("drop table if exists main_table")
+  override def afterAll(): Unit = {
+    drop
   }
 }

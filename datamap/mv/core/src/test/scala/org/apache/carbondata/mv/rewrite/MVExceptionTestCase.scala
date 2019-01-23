@@ -26,34 +26,26 @@ class MVExceptionTestCase  extends QueryTest with BeforeAndAfterAll {
     sql("create table main_table (name string,age int,height int) stored by 'carbondata'")
   }
 
-
-
   test("test mv no base table") {
-    sql("drop datamap if exists main_table_mv")
-
-
     val ex = intercept[NoSuchTableException] {
       sql("create datamap main_table_mv on table main_table_error using 'mv' as select sum(age),name from main_table group by name")
     }
-
     assertResult("Table or view 'main_table_error' not found in database 'default';")(ex.getMessage())
-    sql("drop datamap if exists main_table_mv")
   }
 
   test("test mv reduplicate mv table") {
-    sql("drop datamap if exists main_table_mv")
-
     val ex = intercept[UnsupportedOperationException] {
-      sql("create datamap main_table_mv on table main_table using 'mv' as select sum(age),name from main_table group by name")
-      sql("create datamap main_table_mv on table main_table using 'mv' as select sum(age),name from main_table group by name")
+      sql("create datamap main_table_mv1 on table main_table using 'mv' as select sum(age),name from main_table group by name")
+      sql("create datamap main_table_mv1 on table main_table using 'mv' as select sum(age),name from main_table group by name")
     }
     assertResult("MV with same query present")(ex.getMessage)
-    sql("drop datamap if exists main_table_mv")
   }
 
   def drop(): Unit = {
     sql("drop table IF EXISTS main_table")
     sql("drop table if exists main_table_error")
+    sql("drop datamap if exists main_table_mv")
+    sql("drop datamap if exists main_table_mv1")
   }
 
   override def afterAll(): Unit = {
